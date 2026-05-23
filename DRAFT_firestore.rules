@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      // For simplicity in this demo, we check a dedicated admins collection
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['nisn', 'name', 'classId', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.nisn is string && data.nisn.size() <= 20 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.classId is string &&
+             data.createdAt == request.time;
+    }
+
+    function isValidGrade(data) {
+      return data.keys().hasAll(['studentId', 'subjectId', 'semester', 'formativeScore', 'summativeScore', 'description', 'teacherId', 'updatedAt']) &&
+             data.keys().size() == 8 &&
+             data.studentId is string &&
+             data.subjectId is string &&
+             data.semester in [1, 2] &&
+             data.formativeScore is number && data.formativeScore >= 0 && data.formativeScore <= 100 &&
+             data.summativeScore is number && data.summativeScore >= 0 && data.summativeScore <= 100 &&
+             data.description is string && data.description.size() <= 5000 &&
+             data.teacherId == request.auth.uid &&
+             data.updatedAt == request.time;
+    }
+
+    // --- Rules ---
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Managed via console
+    }
+
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create: if isEmailVerified() && isValidId(studentId) && isValidStudent(incoming());
+      allow update: if isEmailVerified() && isValidId(studentId) && 
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().nisn == existing().nisn &&
+                      (isAdmin() || (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'classId'])));
+      allow delete: if isAdmin();
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.teacherId == request.auth.uid);
+      allow create: if isEmailVerified() && isValidId(gradeId) && isValidGrade(incoming());
+      allow update: if isEmailVerified() && isValidId(gradeId) &&
+                      incoming().studentId == existing().studentId &&
+                      incoming().subjectId == existing().subjectId &&
+                      (isAdmin() || (existing().teacherId == request.auth.uid && 
+                       incoming().diff(existing()).affectedKeys().hasOnly(['formativeScore', 'summativeScore', 'description', 'updatedAt'])));
+      allow delete: if isAdmin() || (isSignedIn() && existing().teacherId == request.auth.uid);
+    }
+
+    match /teachers/{teacherId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || (request.auth.uid == teacherId && incoming().uid == teacherId);
+    }
+    
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Student information for the report card",
+      "type": "object",
+      "properties": {
+        "nis": { "type": "string" },
+        "nisn": { "type": "string" },
+        "name": { "type": "string" },
+        "panggilan": { "type": "string" },
+        "tempatLahir": { "type": "string" },
+        "tanggalLahir": { "type": "string" },
+        "jenisKelamin": { "type": "string" },
+        "agama": { "type": "string" },
+        "pendidikanSebelumnya": { "type": "string" },
+        "alamatPesertaDidik": { "type": "string" },
+        "namaAyah": { "type": "string" },
+        "namaIbu": { "type": "string" },
+        "pekerjaanAyah": { "type": "string" },
+        "pekerjaanIbu": { "type": "string" },
+        "teleponAyah": { "type": "string" },
+        "teleponIbu": { "type": "string" },
+        "alamatAyah": { "type": "string" },
+        "alamatIbu": { "type": "string" },
+        "namaWali": { "type": "string" },
+        "pekerjaanWali": { "type": "string" },
+        "alamatWali": { "type": "string" },
+        "teleponWali": { "type": "string" },
+        "classId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["nisn", "name", "classId"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Learning subjects and grade thresholds",
+      "type": "object",
+      "properties": {
+        "order": { "type": "number", "description": "Display order (1-15)" },
+        "name": { "type": "string", "description": "Subject name" },
+        "minA": { "type": "number" },
+        "minB": { "type": "number" },
+        "minC": { "type": "number" },
+        "minD": { "type": "number" },
+        "tps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "no": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "order"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "descA": { "type": "string" },
+        "descB": { "type": "string" },
+        "descC": { "type": "string" },
+        "descD": { "type": "string" }
+      }
+    },
+    "Grade": {
+      "title": "Grade",
+      "description": "Student grades and automatic descriptions based on TP scores",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "subjectId": { "type": "string" },
+        "tpScores": { 
+          "type": "object",
+          "description": "Map of TP numbers to scores, e.g., {'1': 85, '2': 90}"
+        },
+        "sas": { "type": "number", "description": "Sumatif Akhir Semester" },
+        "rataRata": { "type": "number", "description": "Average of TP scores" },
+        "nilaiRapor": { "type": "number", "description": "Final grade calculation" },
+        "deskripsiMax": { "type": "string", "description": "Generated description for highest score" },
+        "deskripsiMin": { "type": "string", "description": "Generated description for lowest score" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "subjectId"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Teacher profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "subjects": { "type": "array", "items": { "type": "string" } },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["uid", "name"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "Academic classes",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "waliKelasId": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "SchoolInfo": {
+      "title": "School Information",
+      "description": "Identity of the school",
+      "type": "object",
+      "properties": {
+        "namaSekolah": { "type": "string" },
+        "npsn": { "type": "string" },
+        "alamat": { "type": "string" },
+        "telepon": { "type": "string" },
+        "kelurahan": { "type": "string" },
+        "kecamatan": { "type": "string" },
+        "kabupaten": { "type": "string" },
+        "provinsi": { "type": "string" },
+        "website": { "type": "string" },
+        "email": { "type": "string" },
+        "pltKepala": { "type": "string" },
+        "nipKepala": { "type": "string" },
+        "guruKelas": { "type": "string" },
+        "nipGuru": { "type": "string" },
+        "kelas": { "type": "string" },
+        "fase": { "type": "string" },
+        "semester": { "type": "string" },
+        "tahunAjaran": { "type": "string" },
+        "tanggalRaporSts": { "type": "string" },
+        "tanggalRaporSas": { "type": "string" },
+        "logo": { "type": "string", "description": "Base64 encoded logo image" }
+      }
+    },
+    "SubjectMapping": {
+      "title": "Subject Mapping",
+      "description": "Mapping of table columns to TP numbers for a subject",
+      "type": "object",
+      "properties": {
+        "subjectId": { "type": "string" },
+        "mapping": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["subjectId", "mapping"]
+    },
+    "Kokurikuler": {
+      "title": "Kokurikuler",
+      "description": "Assessment of Kokurikuler activities (Project Profil Pelajar Pancasila)",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "kegiatan": { "type": "string" },
+        "scores": { "type": "object", "description": "Map of dimension index to predikat" },
+        "deskripsi": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId"]
+    },
+    "EkstraListItem": {
+      "title": "EkstraListItem",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "StudentEkstra": {
+      "title": "StudentEkstra",
+      "description": "Assessment of extracurricular activities for a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "activities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ekstraId": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Student attendance record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "sakit": { "type": "string" },
+        "izin": { "type": "string" },
+        "alpha": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId"]
+    },
+    "TeacherNote": {
+      "title": "Teacher Note",
+      "description": "Notes from teacher for student's report card",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "note": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "note"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Collection of students"
+    },
+    "/subjects/{subjectId}": {
+      "schema": "Subject",
+      "description": "Available subjects"
+    },
+    "/grades/{gradeId}": {
+      "schema": "Grade",
+      "description": "Scores and competency descriptions"
+    },
+    "/teachers/{teacherId}": {
+      "schema": "Teacher",
+      "description": "Teacher profiles"
+    },
+    "/classes/{classId}": {
+      "schema": "Class",
+      "description": "Classes information"
+    },
+    "/school_info/{infoId}": {
+      "schema": "SchoolInfo",
+      "description": "School identity details"
+    },
+    "/mappings/{subjectId}": {
+      "schema": "SubjectMapping",
+      "description": "Column mappings for subjects"
+    },
+    "/kokurikuler/{studentId}": {
+      "schema": "Kokurikuler",
+      "description": "Assessment of kokurikuler per student"
+    },
+    "/ekstra_list/{ekstraId}": {
+      "schema": "EkstraListItem",
+      "description": "List of available extracurricular activities"
+    },
+    "/ekstrakurikuler/{studentId}": {
+      "schema": "StudentEkstra",
+      "description": "Extracurricular grades per student"
+    },
+    "/attendance/{studentId}": {
+      "schema": "Attendance",
+      "description": "Student attendance data"
+    },
+    "/teacher_notes/{studentId}": {
+      "schema": "TeacherNote",
+      "description": "Teacher notes per student"
+    }
+  }
+}

@@ -1,0 +1,212 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "46pinkpurple@gmail.com"
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['nis', 'nisn', 'name', 'panggilan', 'tempatLahir', 'tanggalLahir', 'jenisKelamin', 'agama', 'pendidikanSebelumnya', 'alamatPesertaDidik', 'namaAyah', 'namaIbu', 'pekerjaanAyah', 'pekerjaanIbu', 'teleponAyah', 'teleponIbu', 'alamatAyah', 'alamatIbu', 'namaWali', 'pekerjaanWali', 'alamatWali', 'teleponWali', 'classId']) &&
+             data.name is string && data.name.size() <= 200 &&
+             data.nisn is string && data.nisn.size() <= 50;
+    }
+
+    function isValidStudentUpdate(data) {
+      return isValidStudent(data) && 
+             data.updatedAt == request.time;
+    }
+
+    function isValidSubject(data) {
+      return data.keys().hasAll(['order', 'name', 'minA', 'minB', 'minC', 'minD']) &&
+             data.order is number && data.order >= 1 && data.order <= 15 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.minA is number && data.minB is number && data.minC is number && data.minD is number &&
+             ( !('tps' in data) || (data.tps is list && data.tps.size() <= 30) );
+    }
+
+    function isValidMapping(data) {
+      return data.keys().hasAll(['subjectId', 'mapping', 'updatedAt']) &&
+             data.keys().size() == 3 &&
+             data.subjectId is string &&
+             data.mapping is map &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidKokurikuler(data) {
+      return data.keys().hasAll(['studentId', 'kegiatan', 'scores', 'deskripsi', 'updatedAt']) &&
+             data.keys().size() == 5 &&
+             data.studentId is string &&
+             data.kegiatan is string &&
+             data.scores is map &&
+             data.deskripsi is string &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidEkstraList(data) {
+      return data.keys().hasAll(['name', 'createdAt']) &&
+             data.keys().size() == 2 &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.createdAt == request.time;
+    }
+
+    function isValidStudentEkstra(data) {
+      return data.keys().hasAll(['studentId', 'activities', 'updatedAt']) &&
+             data.keys().size() == 3 &&
+             data.studentId is string &&
+             data.activities is list &&
+             data.updatedAt == request.time;
+    }
+    
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['studentId', 'sakit', 'izin', 'alpha', 'updatedAt']) &&
+             data.keys().size() == 5 &&
+             data.studentId is string &&
+             data.sakit is string &&
+             data.izin is string &&
+             data.alpha is string &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidTeacherNote(data) {
+      return data.keys().hasAll(['studentId', 'note', 'updatedAt']) &&
+             data.keys().size() == 3 &&
+             data.studentId is string &&
+             data.note is string &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidSchoolInfo(data) {
+      return data.namaSekolah is string &&
+             data.npsn is string &&
+             data.alamat is string &&
+             (!('logo' in data) || (data.logo is string && data.logo.size() <= 1000000));
+    }
+
+    function isValidGrade(data) {
+      return data.keys().hasAll(['studentId', 'subjectId', 'tpScores', 'sas', 'rataRata', 'nilaiRapor', 'deskripsiMax', 'deskripsiMin', 'updatedAt']) &&
+             data.keys().size() == 9 &&
+             data.studentId is string &&
+             data.subjectId is string &&
+             data.tpScores is map &&
+             data.sas is number &&
+             data.rataRata is number &&
+             data.nilaiRapor is number &&
+             data.deskripsiMax is string &&
+             data.deskripsiMin is string &&
+             data.updatedAt == request.time;
+    }
+
+    // --- Rules ---
+
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    match /students/{studentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidStudent(incoming()) && 
+                    (incoming().createdAt == request.time || isAdmin()) && 
+                    (incoming().keys().size() == 24 || isAdmin());
+      allow update: if isSignedIn() && (isValidStudentUpdate(incoming()) || isAdmin());
+      allow delete: if isSignedIn() || isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isSignedIn(); // Allow teachers to update some settings if needed, or just admin
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidSubject(incoming()) && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isValidSubject(incoming()) && incoming().updatedAt == request.time;
+      allow delete: if isSignedIn();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidGrade(incoming());
+      allow delete: if isAdmin() || (isSignedIn());
+    }
+
+    match /teachers/{teacherId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == teacherId;
+      allow update: if isSignedIn() && (isAdmin() || (request.auth.uid == teacherId && incoming().uid == teacherId));
+    }
+    
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isSignedIn();
+    }
+
+    match /school_info/{infoId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidSchoolInfo(incoming());
+    }
+
+    match /mappings/{subjectId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidMapping(incoming());
+    }
+
+    match /kokurikuler/{studentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidKokurikuler(incoming());
+    }
+
+    match /ekstra_list/{ekstraId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidEkstraList(incoming());
+    }
+
+    match /ekstrakurikuler/{studentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidStudentEkstra(incoming());
+    }
+
+    match /attendance/{studentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidAttendance(incoming());
+    }
+
+    match /teacher_notes/{studentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isValidTeacherNote(incoming());
+    }
+  }
+}

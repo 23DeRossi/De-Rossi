@@ -1,0 +1,8 @@
+{
+  "name": "Rapor Kurikulum Merdeka",
+  "description": "Aplikasi manajemen nilai dan cetak rapor Kurikulum Merdeka dengan fitur AI untuk membantu guru menyusun deskripsi capaian kompetensi siswa secara otomatis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
